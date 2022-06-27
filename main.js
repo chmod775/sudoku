@@ -200,14 +200,110 @@ class Table {
 					changed |= c.clearNumber(cellContent);
 		}
 
+		if (changed) this.print();
 		return changed;
 	}
 
+	stepMedium() {
+		let changed = false;
+
+		for (var i = 0; i < 9; i++) {
+			let rowCells = this.getRowCells(i);
+			let colCells = this.getColCells(i);
+			let sqCells = this.getSquareCells(i);
+
+			let rowNumbers = Table.FilterSingleNonUniqueOccurrence(Table.CountNumberOccurrences(rowCells));
+			let colNumbers = Table.FilterSingleNonUniqueOccurrence(Table.CountNumberOccurrences(colCells));
+			let sqNumbers = Table.FilterSingleNonUniqueOccurrence(Table.CountNumberOccurrences(sqCells));
+
+			for (var o of rowNumbers) { o.cell.setUnique(o.num); changed = true; }
+			for (var o of colNumbers) { o.cell.setUnique(o.num); changed = true; }
+			for (var o of sqNumbers) { o.cell.setUnique(o.num); changed = true; }
+		}
+
+		if (changed) this.print();
+		return changed;
+	}
+
+	static FilterSingleNonUniqueOccurrence(occ) {
+		let ret = [];
+		for (var i = 0; i < 9; i++) {
+			let o = occ[i];
+			if (o.length == 1) {
+				let c = o[0];
+				if (!c.isUnique())
+					ret.push({ num: i + 1, cell: c });
+			}
+		}
+
+		return ret;
+	}
+
+	static CountNumberOccurrences(seq) {
+		let numbers = [ [], [], [], [], [], [], [], [], [] ];
+
+		for (var c of seq) {
+			let cellNumbers = c.getNumbers();
+			for (var n of cellNumbers)
+				numbers[n - 1].push(c);
+		}
+
+		return numbers;
+	}
+
+	static ValidateSequence(seq) {
+		if (seq.length != 9) throw `Sequence not valid.`;
+		let numbers = [];
+		for (var c of seq) {
+			if (!c.isUnique()) throw `Solution not valid: Cell [${c.y + 1}, ${c.x + 1}] is not unique. Contains numbers ${c.getNumbers().join(',')}`;
+
+			let cellContent = c.getNumbers()[0];
+			if (numbers.includes(cellContent)) throw `Solution not valid: Cell [${c.y + 1}, ${c.x + 1}] value duplicated (${cellContent}).`;
+			numbers.push(cellContent);
+		}
+	}
+
+	validateSolution() {
+		for (var i = 0; i < 9; i++) {
+			let rowCells = this.getRowCells(i);
+			let colCells = this.getColCells(i);
+			let sqCells = this.getSquareCells(i);
+
+			Table.ValidateSequence(rowCells);
+			Table.ValidateSequence(colCells);
+			Table.ValidateSequence(sqCells);
+		}
+	}
+
+	printNumbers() {
+		for (var y = 0; y < 9; y++) {
+			for (var x = 0; x < 9; x++) {
+				let c = this.cells[y][x];
+				if (!c.isUnique()) {
+					console.log(`[${c.y + 1}, ${c.x + 1}]: ${c.getNumbers().join(',')}`);
+				}
+			}
+		}
+	}
+
+	print() {
+		console.log(this.toString());
+	}
 }
 
-const easyTable = Table.FromFile('easy.sud');
-while (easyTable.stepEasy());
+const easyTable = Table.FromFile('medium.sud');
+global.table = easyTable;
 
-console.log(easyTable.getUniqueCells());
+
+const repl = require("repl");
+//repl.start("custom-repl => ");
+
+do {
+	while (easyTable.stepEasy());
+} while (easyTable.stepMedium());
+
+//easyTable.validateSolution();
+
+//console.log(easyTable.getUniqueCells());
 console.log(easyTable.toString());
 
