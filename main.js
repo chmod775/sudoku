@@ -1,4 +1,5 @@
 const fs = require('fs');
+const { nextTick } = require('process');
 
 class Cell {
 	constructor(x, y) {
@@ -25,6 +26,13 @@ class Cell {
 		let alreadyClear = this.numbers[number - 1] == false;
 		this.numbers[number - 1] = false;
 		return !alreadyClear;
+	}
+
+	clearNumbers(numbers) {
+		let changed = false;
+		for (var n of numbers)
+			changed |= this.clearNumber(n);
+		return changed;
 	}
 
 	containsNumber(number) {
@@ -60,6 +68,18 @@ class Cell {
 		if (!this.isOriginal)
 			return RED + this.getNumbers()[0] + ENDCOLOR;
 		return this.getNumbers()[0];
+	}
+
+	isEqual(cell) {
+		let mineNumbers = this.getNumbers();
+		let themNumbers = cell.getNumbers();
+		if (mineNumbers.length != themNumbers.length) return false;
+
+		for (var n of mineNumbers)
+			if (!themNumbers.includes(n))
+				return false;
+		
+		return true;
 	}
 }
 
@@ -225,6 +245,81 @@ class Table {
 		return changed;
 	}
 
+	stepHard() {
+		let changed = false;
+
+		for (var i = 0; i < 9; i++) {
+			let rowCells = this.getRowCells(i);
+			let colCells = this.getColCells(i);
+			let sqCells = this.getSquareCells(i);
+
+			
+			let rowTwins = Table.FindHiddenTwins(rowCells);
+			let colTwins = Table.FindHiddenTwins(colCells);
+			let sqTwins = Table.FindHiddenTwins(sqCells);
+
+			for (var t of rowTwins) {
+				for (var c of rowCells) {
+					if (t.filter(tw => tw.isEqual(c)).length > 0) continue;
+					changed |= c.clearNumbers(t[0].getNumbers());
+				}
+			}
+
+			for (var t of colTwins) {
+				for (var c of colCells) {
+					if (t.filter(tw => tw.isEqual(c)).length > 0) continue;
+					changed |= c.clearNumbers(t[0].getNumbers());
+				}
+			}
+
+			for (var t of sqTwins) {
+				for (var c of sqCells) {
+					if (t.filter(tw => tw.isEqual(c)).length > 0) continue;
+					changed |= c.clearNumbers(t[0].getNumbers());
+				}
+			}
+
+		}
+
+		if (changed) this.print();
+		return changed;
+	}
+
+	static FindTwinCellsInSequence(cell, seq) {
+		let ret = [];
+
+		for (var c of seq)
+			if (!c.isUnique())
+				if ((c.x != cell.x) || (c.y != cell.y))
+					if (c.isEqual(cell))
+						ret.push(c);
+
+		return ret;
+	}
+
+	static FindHiddenTwins(seq) {
+		let ret = [];
+		let foundTwins = [];
+
+		for (var c of seq) {
+			if (c.isUnique()) continue;
+			if (foundTwins.filter(t => t.isEqual(c)).length > 0) continue;
+
+			let cellNumbers = c.getNumbers();
+			let twins = Table.FindTwinCellsInSequence(c, seq);
+
+			if (twins.length == (cellNumbers.length - 1)) {
+				foundTwins.push(c);
+				foundTwins.push(...twins);
+
+				twins.push(c);
+				ret.push(twins);
+			}
+		}
+
+		return ret;
+	}
+
 	static FilterSingleNonUniqueOccurrence(occ) {
 		let ret = [];
 		for (var i = 0; i < 9; i++) {
@@ -273,6 +368,7 @@ class Table {
 			Table.ValidateSequence(colCells);
 			Table.ValidateSequence(sqCells);
 		}
+		console.log('Sudoku validated successfully!');
 	}
 
 	printNumbers() {
@@ -291,18 +387,20 @@ class Table {
 	}
 }
 
-const easyTable = Table.FromFile('medium.sud');
+const easyTable = Table.FromFile('hard.sud');
 global.table = easyTable;
 
 
 const repl = require("repl");
-//repl.start("custom-repl => ");
 
 do {
-	while (easyTable.stepEasy());
-} while (easyTable.stepMedium());
+	do {
+		while (easyTable.stepEasy());
+	} while (easyTable.stepMedium());
+} while (easyTable.stepHard());
+//repl.start("custom-repl => ");
 
-//easyTable.validateSolution();
+easyTable.validateSolution();
 
 //console.log(easyTable.getUniqueCells());
 console.log(easyTable.toString());
