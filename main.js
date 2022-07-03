@@ -252,8 +252,7 @@ class Table {
 			let rowCells = this.getRowCells(i);
 			let colCells = this.getColCells(i);
 			let sqCells = this.getSquareCells(i);
-
-			
+		
 			let rowTwins = Table.FindHiddenTwins(rowCells);
 			let colTwins = Table.FindHiddenTwins(colCells);
 			let sqTwins = Table.FindHiddenTwins(sqCells);
@@ -284,6 +283,26 @@ class Table {
 		if (changed) this.print();
 		return changed;
 	}
+
+	stepExpert() {
+		let changed = false;
+
+		for (var i = 0; i < 9; i++) {
+			let rowCells = this.getRowCells(i);
+			let colCells = this.getColCells(i);
+		
+			let rowTwins = Table.FindHiddenTwins(rowCells);
+			let colTwins = Table.FindHiddenTwins(colCells);
+
+			
+
+		}
+
+		if (changed) this.print();
+		return changed;
+	}
+
+
 
 	static FindTwinCellsInSequence(cell, seq) {
 		let ret = [];
@@ -387,7 +406,7 @@ class Table {
 	}
 }
 
-const easyTable = Table.FromFile('hard.sud');
+const easyTable = Table.FromFile('expert.sud');
 global.table = easyTable;
 
 
@@ -398,9 +417,9 @@ do {
 		while (easyTable.stepEasy());
 	} while (easyTable.stepMedium());
 } while (easyTable.stepHard());
-//repl.start("custom-repl => ");
+repl.start("custom-repl => ");
 
-easyTable.validateSolution();
+//easyTable.validateSolution();
 
 //console.log(easyTable.getUniqueCells());
 console.log(easyTable.toString());
